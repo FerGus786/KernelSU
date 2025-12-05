@@ -5,6 +5,7 @@
 #include <generated/utsrelease.h>
 #include <generated/compile.h>
 #include <linux/version.h> /* LINUX_VERSION_CODE, KERNEL_VERSION macros */
+#include <linux/moduleparam.h>
 
 #include "allowlist.h"
 #include "core_hook.h"
@@ -18,6 +19,9 @@
 #include "ksu.h"
 
 struct cred* ksu_cred;
+
+bool allow_shell = false;
+module_param(allow_shell, bool, 0);
 
 #ifdef CONFIG_KSU_KPROBES_KSUD
 extern void kp_ksud_init();
@@ -70,6 +74,9 @@ int __init kernelsu_init(void)
 	pr_alert("**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
 	pr_alert("*************************************************************");
 #endif
+    if (allow_shell) {
+        pr_alert("shell is allowed at init!");
+    }
 
 	ksu_cred = prepare_creds();
 	if (!ksu_cred) {
@@ -124,4 +131,3 @@ MODULE_IMPORT_NS("VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver");
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
 MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
 #endif
-

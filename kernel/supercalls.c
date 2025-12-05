@@ -9,6 +9,7 @@
 #include <linux/syscalls.h>
 #include <linux/uaccess.h>
 #include <linux/version.h>
+#include <linux/pid.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)
 #include <linux/sched/task.h> // put_task_struct
@@ -510,8 +511,8 @@ static int add_try_umount(void __user *arg)
 		case KSU_UMOUNT_ADD: {
 			long len = strncpy_from_user(buf, (const char __user *)cmd.arg, 256);
 			if (len <= 0)
-				return -EFAULT;	
-			
+				return -EFAULT;
+
 			buf[sizeof(buf) - 1] = '\0';
 
 			new_entry = kzalloc(sizeof(*new_entry), GFP_KERNEL);
@@ -558,7 +559,7 @@ static int add_try_umount(void __user *arg)
 			long len = strncpy_from_user(buf, (const char __user *)cmd.arg, sizeof(buf) - 1);
 			if (len <= 0)
 				return -EFAULT;
-			
+
 			buf[sizeof(buf) - 1] = '\0';
 
 			down_write(&mount_list_lock);
@@ -571,10 +572,10 @@ static int add_try_umount(void __user *arg)
 				}
 			}
 			up_write(&mount_list_lock);
-			
+
 			return 0;
 		}
-		
+
 		// this way userspace can deduce the memory it has to prepare.
 		case KSU_UMOUNT_GETSIZE: {
 			// check for pointer first
@@ -634,8 +635,28 @@ static int add_try_umount(void __user *arg)
 		}
 
 	} // switch(cmd.mode)
-	
+
 	return 0;
+}
+
+static int do_set_init_pgrp(void __user *arg)
+{
+    int err;
+    write_lock_irq(&tasklist_lock);
+    struct task_struct *p = current->group_leader;
+    struct pid *init_group = task_pgrp(&init_task);
+
+    err = -EPERM;
+    if (task_session(p) != task_session(&init_task))
+        goto out;
+
+    err = 0;
+    if (task_pgrp(p) != init_group)
+        change_pid(p, PIDTYPE_PGID, init_group);
+
+out:
+    write_unlock_irq(&tasklist_lock);
+    return err;
 }
 
 // IOCTL handlers mapping table
@@ -658,6 +679,7 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
 	{ .cmd = KSU_IOCTL_MANAGE_MARK, .name = "MANAGE_MARK", .handler = do_manage_mark, .perm_check = manager_or_root },
 	{ .cmd = KSU_IOCTL_NUKE_EXT4_SYSFS, .name = "NUKE_EXT4_SYSFS", .handler = do_nuke_ext4_sysfs, .perm_check = manager_or_root },
 	{ .cmd = KSU_IOCTL_ADD_TRY_UMOUNT, .name = "ADD_TRY_UMOUNT", .handler = add_try_umount, .perm_check = manager_or_root },
+    { .cmd = KSU_IOCTL_SET_INIT_PGRP, .name = "SET_INIT_PGRP", .handler = do_set_init_pgrp, .perm_check = only_root },
 	{ .cmd = 0, .name = NULL, .handler = NULL, .perm_check = NULL } // Sentinel
 };
 
