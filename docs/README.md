@@ -4,7 +4,7 @@
 
 A kernel-based root solution for Android devices. (heavily modified)
 
-This is meant for use with `KowSU`, but `xxKSU`, `RKSU`, `Official` managers are also supported.
+This is meant for use with `KowSU`, but `xxKSU`, `RKSU`, `MKSU`, `Official` managers are also supported.
 
 ## Usage
 
