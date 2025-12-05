@@ -9,7 +9,7 @@ config KSU
 config KSU_EXTRAS
 	bool "Enable custom stuff"
 	depends on KSU
-	default n
+	default y
 	help
 	  Custom extensions. Experimental.
 	  Currently, only avc log spoofing is implemented.
@@ -50,8 +50,8 @@ config KSU_THRONE_TRACKER_ALWAYS_THREADED
 
 config KSU_LSM_SECURITY_HOOKS
 	bool "Use LSM security hooks"
-        depends on KSU
-        default y
+    depends on KSU
+    default y
 	help
 	  Disabling this is mostly useful for kernels < 4.2 and > 6.8.
 	  Make sure to implement manual hooks on security/security.c.
